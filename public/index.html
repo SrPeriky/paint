@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Canvas Paint</title>
+  <style>
+    #canvas {
+      border: 1px solid black;
+      cursor: crosshair;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div>
+    <label for="brushSize">Brush Size:</label>
+    <button id="upSize">++</button>
+    <button id="downSize">--</button>
+  </div>
+  <div>
+    <label for="colorPicker">Color:</label>
+    <input type="color" id="colorPicker" value="#000000">
+  </div>
+  <div>
+    <button id="zoomIn">Zoom In</button>
+    <button id="zoomOut">Zoom Out</button>
+  </div>
+  <div>
+    <input type="checkbox" id="moveCheckbox">
+    <label for="moveCheckbox">Mover mapa</label>
+  </div>
+  <canvas id="canvas"></canvas>
+  <script src="/socket.io/socket.io.js"></script>
+
+  <script>
+    var socket = io()
+
+    class CanvasApp {
+      constructor() {
+        this.canvas = document.getElementById('canvas')
+        this.ctx = this.canvas.getContext('2d')
+        this.brushSize = 1
+        this.color = '#000000'
+        this.isDrawing = false
+        this.lastX = 0
+        this.lastY = 0
+        this.mapX = 0
+        this.mapY = 0
+        this.isDragging = false
+        this.moveCheckbox = false
+        this.lastMouseX = 0
+        this.lastMouseY = 0
+        this.savedBrushSize = sessionStorage.getItem('brushSize') || 1
+        this.initializeDrawing()
+        this.setupEventListeners()
+        this.resizeCanvas()
+      }
+
+      async initializeDrawing() {
+        try {
+          this.drawing = JSON.parse(sessionStorage.getItem('drawing')) ?? await this.getDrawing()
+        } catch (error) {
+          console.error('Error al obtener datos del dibujo:', error)
+        }
+        this.redraw()
+      }
+
+      async getDrawing() {
+        try {
+          const response = await fetch('/drawings')
+          if (response.ok) {
+            return response.json()
+          } else {
+            throw new Error('Something went wrong')
+          }
+        } catch (error) {
+          throw error
+        }
+      }
+
+      resizeCanvas() {
+        this.canvas.width = window.innerWidth * 0.99
+        this.canvas.height = window.innerHeight - 100
+        this.redraw()
+      }
+
+      draw(e) {
+        if (!this.isDrawing) return
+        const { lastX, lastY } = this
+        const { offsetX, offsetY } = e
+        this.draw2({ lastX, lastY, x: offsetX, y: offsetY, color: this.color, brushSize: this.brushSize })
+        this.storePoint(lastX - this.mapX, lastY - this.mapY, offsetX - this.mapX, offsetY - this.mapY, this.color, this.brushSize)
+        this.lastX = offsetX
+        this.lastY = offsetY
+      }
+
+      storePoint(lastX, lastY, x, y, color, brushSize) {
+        const data = { lastX, lastY, x, y, color, brushSize }
+        socket.emit('new line', data)
+        this.drawing.push(data)
+        sessionStorage.setItem('drawing', JSON.stringify(this.drawing))
+        sessionStorage.setItem('brushSize', brushSize)
+      }
+
+      draw2(data) {
+        const { lastX, lastY, x, y, color, brushSize } = data
+        this.ctx.lineWidth = brushSize
+        this.ctx.strokeStyle = color
+        this.ctx.lineCap = 'round'
+        this.ctx.beginPath()
+        this.ctx.moveTo(lastX + this.mapX, lastY + this.mapY)
+        this.ctx.lineTo(x + this.mapX, y + this.mapY)
+        this.ctx.stroke()
+      }
+
+      redraw() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+        if (this.drawing) for (let i = 1; i < this.drawing.length; i++) {
+          this.draw2(this.drawing[i])
+        }
+      }
+
+      startDragging(e) {
+        this.isDragging = this.moveCheckbox
+        this.lastMouseX = e.clientX
+        this.lastMouseY = e.clientY
+      }
+
+      dragMap(e) {
+        if (this.isDragging) {
+          const deltaX = e.clientX - this.lastMouseX
+          const deltaY = e.clientY - this.lastMouseY
+          this.mapX += deltaX
+          this.mapY += deltaY
+          this.lastMouseX = e.clientX
+          this.lastMouseY = e.clientY
+          this.redraw()
+        }
+      }
+
+      setupEventListeners() {
+        this.canvas.addEventListener('mousedown', (e) => {
+          this.isDrawing = true
+          [this.lastX, this.lastY] = [e.offsetX, e.offsetY]
+        })
+
+        this.canvas.addEventListener('mousemove', (e) => { if (!this.moveCheckbox) this.draw(e) ;else this.dragMap(e) })
+        this.canvas.addEventListener('mouseup', () => { this.isDrawing = false ;this.isDragging = false })
+        this.canvas.addEventListener('mouseout', () => { this.isDrawing = false ;this.isDragging = false })
+        this.canvas.addEventListener('mousedown', (e) => this.startDragging(e))
+
+        document.getElementById('upSize').addEventListener('click', (e) => {
+          if (this.brushSize < 100) this.brushSize++
+        })
+
+        document.getElementById('downSize').addEventListener('click', (e) => {
+          if (this.brushSize > 1) this.brushSize--
+        })
+
+        document.getElementById('colorPicker').addEventListener('input', (e) => {
+          this.color = e.target.value
+        })
+
+        document.getElementById('zoomIn').addEventListener('click', () => {
+          this.zoomLevel += 0.1
+          this.resizeCanvas()
+        })
+
+        document.getElementById('zoomOut').addEventListener('click', () => {
+          this.zoomLevel -= 0.1
+          this.resizeCanvas()
+        })
+
+        document.getElementById('moveCheckbox').addEventListener('change', (e) => {
+          this.moveCheckbox = e.target.checked
+        })
+
+        window.addEventListener('resize', () => this.resizeCanvas())
+      }
+    }
+
+    const canvasApp = new CanvasApp()
+
+    socket.on('new line', function (data) {
+      canvasApp.drawing.push(data)
+      canvasApp.draw2(data)
+    })
+
+  </script>
+</body>
+
+</html>
