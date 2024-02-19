@@ -2,195 +2,384 @@
 <html>
 
 <head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="/favicon.ico">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Canvas Paint</title>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://kit.fontawesome.com/42b150d3a6.js" crossorigin="anonymous"></script>
   <style>
     #canvas {
       border: 1px solid black;
       cursor: crosshair;
+      touch-action: none;
     }
 
-    body {
-      margin: 0;
-      padding: 0;
+      body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+    .dark {
+      /* Estilos modo oscuro */
+      @apply bg-gray-900 text-gray-100;
+    }
+
+    .light {
+      /* Estilos modo claro */
+      @apply bg-white text-gray-900;
+    }
+
+    #pen{
+      cursor: crosshair;
+    }
+
+    #draw{
+      position: fixed;
+    border: 1px solid black;
+    cursor: crosshair;
+    touch-action: none;
+    background-color: '#000000';
     }
   </style>
 </head>
 
 <body>
-  <div>
-    <label for="brushSize">Brush Size:</label>
-    <button id="upSize">++</button>
-    <button id="downSize">--</button>
-  </div>
-  <div>
-    <label for="colorPicker">Color:</label>
-    <input type="color" id="colorPicker" value="#000000">
-  </div>
-  <div>
-    <button id="zoomIn">Zoom In</button>
-    <button id="zoomOut">Zoom Out</button>
-  </div>
-  <div>
-    <input type="checkbox" id="moveCheckbox">
-    <label for="moveCheckbox">Mover mapa</label>
-  </div>
+  <div id="pen" class="rounded-full absolute bg-[#000000] hidden"></div>
+
+  <center>
+    <canvas id="draw"></canvas>
   <canvas id="canvas"></canvas>
+  </center>
+  <div class="fixed bottom-0 navbar  bg-base-100 text-primary-content">
+
+    <div class="dropdown dropdown-top sm:hidden">
+      <label tabindex="0" class="btn m-1">Zoom</label>
+      <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
+        <li>
+          <input name="zoom" onchange="zoomChange(this)" oninput="zoomChange(this)" type="range" min="50" max="1000"
+            value="100" class="range range-accent" />
+        </li>
+        <li><button name="zoomreset" onclick="zoomresetClick()" class="btn m-1">Reset zoom</button></li>
+      </ul>
+    </div>
+    <label class="form-control w-full justify-center items-center hidden sm:flex">
+
+      <div class="label">
+        <span class="label-text">Zoom</span>
+      </div>
+      <input name="zoom" onchange="zoomChange(this)" oninput="zoomChange(this)" type="range" max="1000" value="100"
+        class="range range-accent" />
+    </label>
+    <label class="form-control w-full justify-center items-center hidden sm:flex">
+      <button name="zoomreset" onclick="zoomresetClick()" class="btn btn-primary">Reset zoom</button>
+    </label>
+    <label class="form-control w-full justify-center items-center">
+      <label class="swap swap-rotate">
+        <input id="moveCheckbox" type="checkbox" />
+        <svg class="swap-on fill-current w-10 h-10 text-primary" xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 512 512">
+          <path
+            d="M278.6 9.4c-12.5-12.5-32.8-12.5-45.3 0l-64 64c-9.2 9.2-11.9 22.9-6.9 34.9s16.6 19.8 29.6 19.8h32v96H128V192c0-12.9-7.8-24.6-19.8-29.6s-25.7-2.2-34.9 6.9l-64 64c-12.5 12.5-12.5 32.8 0 45.3l64 64c9.2 9.2 22.9 11.9 34.9 6.9s19.8-16.6 19.8-29.6V288h96v96H192c-12.9 0-24.6 7.8-29.6 19.8s-2.2 25.7 6.9 34.9l64 64c12.5 12.5 32.8 12.5 45.3 0l64-64c9.2-9.2 11.9-22.9 6.9-34.9s-16.6-19.8-29.6-19.8H288V288h96v32c0 12.9 7.8 24.6 19.8 29.6s25.7 2.2 34.9-6.9l64-64c12.5-12.5 12.5-32.8 0-45.3l-64-64c-9.2-9.2-22.9-11.9-34.9-6.9s-19.8 16.6-19.8 29.6v32H288V128h32c12.9 0 24.6-7.8 29.6-19.8s2.2-25.7-6.9-34.9l-64-64z" />
+        </svg>
+        <svg class="swap-off fill-current w-10 h-10 text-primary" xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 512 512">
+          <path
+            d="M362.7 19.3L314.3 67.7 444.3 197.7l48.4-48.4c25-25 25-65.5 0-90.5L453.3 19.3c-25-25-65.5-25-90.5 0zm-71 71L58.6 323.5c-10.4 10.4-18 23.3-22.2 37.4L1 481.2C-1.5 489.7 .8 498.8 7 505s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L421.7 220.3 291.7 90.3z" />
+        </svg>
+
+      </label>
+
+
+    </label>
+    <label class="form-control w-full justify-center items-center">
+      <div class="label">
+        <span class="label-text">Color</span>
+      </div>
+      <input id="colorPicker" type="color" value="#000000" class="" title="Choose your color">
+    </label>
+    <label class="form-control w-full justify-center items-center hidden sm:flex">
+      <div class="label">
+        <span class="label-text">Size Pincel</span>
+      </div>
+      <input name="brushSize" onchange="brushSizeChange(this)" oninput="brushSizeChange(this)" type="range" min="2"
+        max="100" value="1" class="range range-accent" />
+    </label>
+    <div class="dropdown dropdown-top dropdown-end sm:hidden">
+      <label tabindex="0" class="btn m-1">Size Pincel</label>
+      <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
+        <li><input name="brushSize" onchange="brushSizeChange(this)" oninput="brushSizeChange(this)" type="range"
+            min="2" max="100" value="1" class="range range-accent" /></li>
+      </ul>
+    </div>
+    <label class="form-control w-full justify-center items-center">
+      <label for="my-drawer-4" class="drawer-button btn btn-primary btn-sm">
+        <i class="fa-solid fa-gear"></i>
+      </label>
+    </label>
+  </div>
+  <div class="drawer drawer-end">
+    <input id="my-drawer-4" type="checkbox" class="drawer-toggle" />
+
+    <div class="drawer-side">
+      <label for="my-drawer-4" aria-label="close sidebar" class="drawer-overlay"></label>
+      <ul class="menu p-4 w-80 min-h-full bg-base-200 text-base-content">
+        <!-- Sidebar content here -->
+
+        <li>
+          <details>
+            <summary>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+              </svg>
+              Capas
+            </summary>
+            <ul>
+              <li><a>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor" class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                  </svg>
+                  Capa 1
+                </a></li>
+              <li>
+                <a>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor" class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                  </svg>
+                  Capa 2
+                </a>
+              </li>
+
+            </ul>
+            <button class="btn w-full btn-primary btn-sm">Nueva +</button>
+          </details>
+        </li>
+        <li><a>Sidebar Item 2</a></li>
+
+      </ul>
+    </div>
+  </div>
   <script src="/socket.io/socket.io.js"></script>
-
   <script>
-    var socket = io()
+    const socket = io()
+    const elDraw = document.getElementById('draw');
+    const canvas = document.getElementById('canvas');
+    const pen = document.getElementById("pen");
 
-    class CanvasApp {
-      constructor() {
-        this.canvas = document.getElementById('canvas')
-        this.ctx = this.canvas.getContext('2d')
-        this.brushSize = 1
-        this.color = '#000000'
-        this.isDrawing = false
-        this.lastX = 0
-        this.lastY = 0
-        this.mapX = 0
-        this.mapY = 0
-        this.isDragging = false
-        this.moveCheckbox = false
-        this.lastMouseX = 0
-        this.lastMouseY = 0
-        this.savedBrushSize = sessionStorage.getItem('brushSize') || 1
-        this.initializeDrawing()
-        this.setupEventListeners()
-        this.resizeCanvas()
-      }
+    const ctx = canvas.getContext('2d');
+    var brushSize = 2;
+    let zoomLevel = 1;
+    let color = '#000000';
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+    let savedBrushSize = sessionStorage.getItem('brushSize') || 1;
 
-      async initializeDrawing() {
-        try {
-          this.drawing = JSON.parse(sessionStorage.getItem('drawing')) ?? await this.getDrawing()
-        } catch (error) {
-          console.error('Error al obtener datos del dibujo:', error)
-        }
-        this.redraw()
-      }
+    let mapX = 0;
+    let mapY = 0;
+    let isDragging = false;
+    let moveCheckbox = false;
+    let lastMouseX = 0;
+    let lastMouseY = 0;
 
-      async getDrawing() {
-        try {
-          const response = await fetch('/drawings')
-          if (response.ok) {
-            return response.json()
-          } else {
-            throw new Error('Something went wrong')
-          }
-        } catch (error) {
-          throw error
-        }
-      }
-
-      resizeCanvas() {
-        this.canvas.width = window.innerWidth * 0.99
-        this.canvas.height = window.innerHeight - 100
-        this.redraw()
-      }
-
-      draw(e) {
-        if (!this.isDrawing) return
-        const { lastX, lastY } = this
-        const { offsetX, offsetY } = e
-        this.draw2({ lastX, lastY, x: offsetX, y: offsetY, color: this.color, brushSize: this.brushSize })
-        this.storePoint(lastX - this.mapX, lastY - this.mapY, offsetX - this.mapX, offsetY - this.mapY, this.color, this.brushSize)
-        this.lastX = offsetX
-        this.lastY = offsetY
-      }
-
-      storePoint(lastX, lastY, x, y, color, brushSize) {
-        const data = { lastX, lastY, x, y, color, brushSize }
-        socket.emit('new line', data)
-        this.drawing.push(data)
-        sessionStorage.setItem('drawing', JSON.stringify(this.drawing))
-        sessionStorage.setItem('brushSize', brushSize)
-      }
-
-      draw2(data) {
-        const { lastX, lastY, x, y, color, brushSize } = data
-        this.ctx.lineWidth = brushSize
-        this.ctx.strokeStyle = color
-        this.ctx.lineCap = 'round'
-        this.ctx.beginPath()
-        this.ctx.moveTo(lastX + this.mapX, lastY + this.mapY)
-        this.ctx.lineTo(x + this.mapX, y + this.mapY)
-        this.ctx.stroke()
-      }
-
-      redraw() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
-        if (this.drawing) for (let i = 1; i < this.drawing.length; i++) {
-          this.draw2(this.drawing[i])
-        }
-      }
-
-      startDragging(e) {
-        this.isDragging = this.moveCheckbox
-        this.lastMouseX = e.clientX
-        this.lastMouseY = e.clientY
-      }
-
-      dragMap(e) {
-        if (this.isDragging) {
-          const deltaX = e.clientX - this.lastMouseX
-          const deltaY = e.clientY - this.lastMouseY
-          this.mapX += deltaX
-          this.mapY += deltaY
-          this.lastMouseX = e.clientX
-          this.lastMouseY = e.clientY
-          this.redraw()
-        }
-      }
-
-      setupEventListeners() {
-        this.canvas.addEventListener('mousedown', (e) => {
-          this.isDrawing = true
-          [this.lastX, this.lastY] = [e.offsetX, e.offsetY]
-        })
-
-        this.canvas.addEventListener('mousemove', (e) => { if (!this.moveCheckbox) this.draw(e) ;else this.dragMap(e) })
-        this.canvas.addEventListener('mouseup', () => { this.isDrawing = false ;this.isDragging = false })
-        this.canvas.addEventListener('mouseout', () => { this.isDrawing = false ;this.isDragging = false })
-        this.canvas.addEventListener('mousedown', (e) => this.startDragging(e))
-
-        document.getElementById('upSize').addEventListener('click', (e) => {
-          if (this.brushSize < 100) this.brushSize++
-        })
-
-        document.getElementById('downSize').addEventListener('click', (e) => {
-          if (this.brushSize > 1) this.brushSize--
-        })
-
-        document.getElementById('colorPicker').addEventListener('input', (e) => {
-          this.color = e.target.value
-        })
-
-        document.getElementById('zoomIn').addEventListener('click', () => {
-          this.zoomLevel += 0.1
-          this.resizeCanvas()
-        })
-
-        document.getElementById('zoomOut').addEventListener('click', () => {
-          this.zoomLevel -= 0.1
-          this.resizeCanvas()
-        })
-
-        document.getElementById('moveCheckbox').addEventListener('change', (e) => {
-          this.moveCheckbox = e.target.checked
-        })
-
-        window.addEventListener('resize', () => this.resizeCanvas())
-      }
+    const pincel = {
+      x: 0,
+      y: 0,
+      radius: brushSize
     }
 
-    const canvasApp = new CanvasApp()
+    var drawing;
+
+    async function initializeDrawing() {
+      try {
+        drawing = JSON.parse(sessionStorage.getItem('drawing')) ?? await getDrawing();
+      } catch (error) {
+        console.error('Error al obtener datos del dibujo:', error);
+      }
+
+      redraw()
+    }
+
+    async function getDrawing() {
+      return new Promise(async (resolve, reject) => {
+        try {
+          const response = await fetch('/drawings');
+          if (response.ok) {
+            resolve(response.json());
+          } else {
+            throw new Error('Something went wrong');
+          }
+        } catch (error) {
+          reject(error);
+        }
+      });
+    }
+
+    initializeDrawing();
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth * 0.99 //* zoomLevel;
+      canvas.height = window.innerHeight - 80 //* zoomLevel;
+      elDraw.width = window.innerWidth * 0.99 //* zoomLevel;
+      elDraw.height = window.innerHeight - 80 //* zoomLevel;
+
+      redraw();
+    }
+
+    function draw(x, y) {
+      if (!isDrawing) return;
+      const data = { lastX: lastX - mapX, lastY: lastY - mapY, x: x - mapX, y: y - mapY, color, brushSize }
+      draw2(data)
+      storePoint(data);
+      [lastX, lastY] = [x, y];
+    }
+
+    function storePoint(data) {
+      socket.emit('new line', data);
+      drawing.push(data);
+      //sessionStorage.setItem('drawing', JSON.stringify(drawing));
+      sessionStorage.setItem('brushSize', brushSize);
+    }
 
     socket.on('new line', function (data) {
-      canvasApp.drawing.push(data)
-      canvasApp.draw2(data)
+      drawing.push(data);
+      draw2(data)
     })
 
+    function draw2(data) {
+      ctx.lineWidth = data.brushSize * zoomLevel;
+      ctx.strokeStyle = data.color;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo((data.lastX + mapX) * zoomLevel, (data.lastY + mapY) * zoomLevel);
+      ctx.lineTo((data.x + mapX) * zoomLevel, (data.y + mapY) * zoomLevel);
+      ctx.stroke();
+    }
+
+    function redraw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (drawing) for (let i = 1; i < drawing.length; i++) {
+        draw2(drawing[i]);
+      }
+    }
+    function moveWithCheckbox(e) {
+      moveCheckbox = e.target.checked;
+    }
+    function dragMap(clientX, clientY) {
+      if (isDragging) {
+        const deltaX = clientX - lastMouseX;
+        const deltaY = clientY - lastMouseY;
+        mapX += deltaX;
+        mapY += deltaY;
+        lastMouseX = clientX;
+        lastMouseY = clientY;
+        redraw();
+      }
+    }
+    function startDragging(e) {
+      isDragging = moveCheckbox;
+      isDrawing = true;
+      [lastX, lastY] = [e.offsetX, e.offsetY];
+      lastMouseX = e.clientX;
+      lastMouseY = e.clientY;
+    }
+
+    function endUp() {
+      isDrawing = false; isDragging = false;
+    }
+
+    function zoomChange(e) {
+      const n = (parseInt(e.value)) / 100
+      if (n != 0) zoomLevel = n
+      penSize()
+      redraw()
+    }
+
+    function removeClass(el, regex) {
+      const classesToRemove = [];
+      for (i = 0; i < el.classList.length; i++) if (regex.test(el.classList[i])) classesToRemove.push(el.classList[i]);
+      classesToRemove.forEach(cls => el.classList.remove(cls));
+    }
+
+    
+
+    function penSize(){
+      removeClass(pen, /(w|h)-\[\d+(\.\d+)?px\]/g)
+      pen.classList.add(`w-[${brushSize * zoomLevel}px]`)
+      pen.classList.add(`h-[${brushSize * zoomLevel}px]`)
+    }
+
+    function brushSizeChange(e) {
+      const n = parseInt(e.value)
+      brushSize = n
+      penSize()
+    }
+
+    function zoomresetClick() {
+      document.getElementsByName("zoom").forEach((e) => e.value = 100)
+      zoomLevel = 1
+      penSize()
+      redraw()
+    }
+
+    elDraw.addEventListener('mousemove', (e) => { if (!moveCheckbox) draw(e.offsetX / zoomLevel, e.offsetY / zoomLevel); else dragMap(e.clientX / zoomLevel, e.clientY / zoomLevel) });
+    elDraw.addEventListener('mouseup', endUp);
+    elDraw.addEventListener('mouseout', endUp);
+    //canvas.addEventListener('mousedown', startDragging);
+    elDraw.addEventListener('mousedown', (e) => startDragging({ offsetX: e.offsetX / zoomLevel, offsetY: e.offsetY / zoomLevel, clientX: e.clientX / zoomLevel, clientY: e.clientY / zoomLevel }));
+    elDraw.addEventListener('touchstart', (e) => startDragging({ offsetX: (e.touches[0].clientX - elDraw.offsetLeft) / zoomLevel, offsetY: (e.touches[0].clientY - elDraw.offsetTop) / zoomLevel, clientX: e.touches[0].clientX / zoomLevel, clientY: e.touches[0].clientY / zoomLevel }))
+    elDraw.addEventListener('touchmove', (e) => { if (!moveCheckbox) draw((e.touches[0].clientX - elDraw.offsetLeft) / zoomLevel, (e.touches[0].clientY - elDraw.offsetTop) / zoomLevel); else dragMap(e.touches[0].clientX / zoomLevel, e.touches[0].clientY / zoomLevel) })
+    elDraw.addEventListener('touchend', endUp);
+
+    elDraw.addEventListener('gesturestart', function(e) {
+      document.getElementById('moveCheckbox').checked = true
+      alert("start")
+      console.log('Zoom gesture started');
+    });
+
+    elDraw.addEventListener('gesturechange', function(e) {
+      console.log('Zoom gesture in progress');
+    });
+
+    elDraw.addEventListener('gestureend', function(e) {
+      document.getElementById('moveCheckbox').checked = false
+      alert("ended")
+      console.log('Zoom gesture ended');
+    });
+
+    document.getElementById('colorPicker').addEventListener('input', (e) => {
+      color = e.target.value;
+      removeClass(pen,  /(bg|text)-\[(#[a-fA-F0-9]{3,6})\]/g)
+      pen.classList.add(`bg-[${color}]`)
+    });
+
+    document.getElementById('moveCheckbox').addEventListener('change', moveWithCheckbox);
+
+    document.addEventListener("mousemove", function(event) {
+      pen.style.left = (event.clientX - ((brushSize / 2) * zoomLevel)) + "px";
+      pen.style.top = (event.clientY - ((brushSize / 2) * zoomLevel))+ "px";
+      const rect = elDraw.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      if (x >= 0 && x <= elDraw.width && y >= 0 && y <= elDraw.height) {
+        pen.classList.remove("hidden")
+      } else {
+        pen.classList.add("hidden")
+      }
+    });
+    elDraw.addEventListener('mouseleave', () => document.getElementById("pen").classList.add("hidden"));
+
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
   </script>
 </body>
 
